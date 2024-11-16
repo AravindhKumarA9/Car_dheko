@@ -11,6 +11,9 @@ with open(model_location, 'rb') as file:
 # Load the dataset for dropdown options
 fl = pd.read_csv('car_dheko_filled.csv')
 
+# Clean and preprocess dataset (remove commas from `Kms_Driven` and convert to integer if needed)
+fl['Kms_Driven'] = fl['Kms_Driven'].fillna(0).astype(str).str.replace(',', '').astype(int)
+
 # Streamlit app
 st.title("Car Price Prediction App")
 st.write("Enter the details of the car to predict its price.")
@@ -18,27 +21,49 @@ st.write("Enter the details of the car to predict its price.")
 # Sidebar for filtering options
 st.sidebar.header('Filter Options')
 
-# Input fields for the user
-body_type = st.sidebar.selectbox("Select body type:", options=fl['bt'].unique())
+# Filter data dynamically based on user selections
 city = st.sidebar.selectbox("Select the city:", options=fl['city'].unique())
-year = st.sidebar.selectbox("Select the year:", options=sorted(fl['modelYear'].unique()))
-mileage = st.sidebar.slider("Select mileage (in km/l):", float(fl['Mileage'].min()), float(fl['Mileage'].max()))
-engine_type = st.sidebar.selectbox("Select the engine type:", options=sorted(fl['Engine Type'].unique()))
-engine_displacement = st.sidebar.slider("Select engine displacement (in CC):", 
-                                         float(fl['Engine_Displacement'].min()), 
-                                         float(fl['Engine_Displacement'].max()))
-seating_capacity = st.sidebar.selectbox("Select seating capacity:", options=sorted(fl['Seating_Capacity'].unique()))
-kms_driven = st.sidebar.number_input("Enter kilometers driven:", min_value=0, value=5000)
+filtered_data = fl[fl['city'] == city]
 
-fuel_type = st.sidebar.selectbox("Select fuel type:", options=fl['Fuel Type'].unique())
-ownership = st.sidebar.selectbox("Select ownership type:", options=fl['Ownership'].unique())
-transmission = st.sidebar.selectbox("Select transmission type:", options=fl['Transmission'].unique())
-# Add additional inputs based on the missing features
-oem = st.sidebar.selectbox("Select OEM (Manufacturer):", options=fl['oem'].unique())
-model_name = st.sidebar.selectbox("Select Car Model:", options=fl['model'].unique())
-max_power = st.sidebar.slider("Enter Max Power (in BHP):", float(fl['Max Power'].min()), float(fl['Max Power'].max()))
+body_type = st.sidebar.selectbox("Select body type:", options=filtered_data['bt'].unique())
+filtered_data = filtered_data[filtered_data['bt'] == body_type]
 
-# Update input preparation
+year = st.sidebar.selectbox("Select the year:", options=sorted(filtered_data['modelYear'].unique()))
+filtered_data = filtered_data[filtered_data['modelYear'] == year]
+
+oem = st.sidebar.selectbox("Select OEM (Manufacturer):", options=filtered_data['oem'].unique())
+filtered_data = filtered_data[filtered_data['oem'] == oem]
+
+model_name = st.sidebar.selectbox("Select Car Model:", options=filtered_data['model'].unique())
+filtered_data = filtered_data[filtered_data['model'] == model_name]
+
+Mileage = st.sidebar.selectbox("Select Mileage (in km/l):", options=sorted(filtered_data['Mileage'].unique()))
+filtered_data = filtered_data[filtered_data['Mileage'] == Mileage]
+
+engine_type = st.sidebar.selectbox("Select the engine type:", options=sorted(filtered_data['Engine Type'].unique()))
+filtered_data = filtered_data[filtered_data['Engine Type'] == engine_type]
+
+engine_displacement = st.sidebar.selectbox("Select Engine Displacement (in CC):", options=sorted(filtered_data['Engine_Displacement'].unique()))
+filtered_data = filtered_data[filtered_data['Engine_Displacement'] == engine_displacement]
+
+seating_capacity = st.sidebar.selectbox("Select seating capacity:", options=sorted(filtered_data['Seating_Capacity'].unique()))
+filtered_data = filtered_data[filtered_data['Seating_Capacity'] == seating_capacity]
+
+ownership = st.sidebar.selectbox("Select ownership type:", options=filtered_data['Ownership'].unique())
+filtered_data = filtered_data[filtered_data['Ownership'] == ownership]
+
+kms_driven = st.sidebar.number_input("Enter kilometers driven:", min_value=0, value=10000)
+
+fuel_type = st.sidebar.selectbox("Select fuel type:", options=filtered_data['Fuel Type'].unique())
+filtered_data = filtered_data[filtered_data['Fuel Type'] == fuel_type]
+
+transmission = st.sidebar.selectbox("Select transmission type:", options=filtered_data['Transmission'].unique())
+filtered_data = filtered_data[filtered_data['Transmission'] == transmission]
+
+max_power = st.sidebar.selectbox("Select Max Power (in BHP):", options=filtered_data['Max Power'].unique())
+filtered_data = filtered_data[filtered_data['Max Power'] == max_power]
+
+# Predict button
 if st.button("Predict Price"):
     try:
         # Encode categorical variables
@@ -54,7 +79,7 @@ if st.button("Predict Price"):
         # Prepare input data in the correct order
         input_data = np.array([[city_encoded, body_type_encoded, oem_encoded, model_name_encoded, year, 
                                 fuel_type_encoded, ownership_encoded, transmission_encoded, engine_type_encoded, 
-                                seating_capacity, mileage, max_power, engine_displacement, kms_driven]])
+                                seating_capacity, Mileage, max_power, engine_displacement, kms_driven]])
 
         # Predict price
         predicted_price = model.predict(input_data)[0]

@@ -62,5 +62,4 @@ if st.button("Predict Price"):
     except Exception as e:
         st.error(f"An error occurred during prediction: {str(e)}")
 
-
 st.write("Note: This is a demo app. The predictions depend on the model's training data.")

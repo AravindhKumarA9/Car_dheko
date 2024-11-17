@@ -11,8 +11,12 @@ with open(model_location, 'rb') as file:
 # Load the dataset for dropdown options
 fl = pd.read_csv('car_dheko_filled.csv')
 
-# Clean and preprocess dataset (remove commas from `Kms_Driven` and convert to integer if needed)
+# Clean and preprocess dataset
+# Remove commas from `Kms_Driven` and convert to integer
 fl['Kms_Driven'] = fl['Kms_Driven'].fillna(0).astype(str).str.replace(',', '').astype(int)
+
+# Extract numeric values from `Max Power`
+fl['Max Power'] = fl['Max Power'].str.extract(r'(\d+\.?\d*)').astype(float)
 
 # Streamlit app
 st.title("Car Price Prediction App")
@@ -25,8 +29,8 @@ st.sidebar.header('Filter Options')
 city = st.sidebar.selectbox("Select the city:", options=fl['city'].unique())
 filtered_data = fl[fl['city'] == city]
 
-body_type = st.sidebar.selectbox("Select body type:", options=filtered_data['bt'].unique())
-filtered_data = filtered_data[filtered_data['bt'] == body_type]
+body_type = st.sidebar.selectbox("Select body type:", options=filtered_data['body_type'].unique())
+filtered_data = filtered_data[filtered_data['body_type'] == body_type]
 
 year = st.sidebar.selectbox("Select the year:", options=sorted(filtered_data['modelYear'].unique()))
 filtered_data = filtered_data[filtered_data['modelYear'] == year]
@@ -60,14 +64,17 @@ filtered_data = filtered_data[filtered_data['Fuel Type'] == fuel_type]
 transmission = st.sidebar.selectbox("Select transmission type:", options=filtered_data['Transmission'].unique())
 filtered_data = filtered_data[filtered_data['Transmission'] == transmission]
 
-max_power = st.sidebar.selectbox("Select Max Power (in BHP):", options=filtered_data['Max Power'].unique())
+max_power = st.sidebar.selectbox("Select Max Power (in BHP):", options=sorted(filtered_data['Max Power'].unique()))
 filtered_data = filtered_data[filtered_data['Max Power'] == max_power]
+
+Acceleration = st.sidebar.selectbox("Select Acceleration type:", options=sorted(filtered_data['Acceleration'].unique()))
+filtered_data = filtered_data[filtered_data['Acceleration'] == Acceleration]
 
 # Predict button
 if st.button("Predict Price"):
     try:
         # Encode categorical variables
-        body_type_encoded = fl['bt'].astype('category').cat.categories.get_loc(body_type)
+        body_type_encoded = fl['body_type'].astype('category').cat.categories.get_loc(body_type)
         city_encoded = fl['city'].astype('category').cat.categories.get_loc(city)
         engine_type_encoded = fl['Engine Type'].astype('category').cat.categories.get_loc(engine_type)
         fuel_type_encoded = fl['Fuel Type'].astype('category').cat.categories.get_loc(fuel_type)
@@ -79,7 +86,7 @@ if st.button("Predict Price"):
         # Prepare input data in the correct order
         input_data = np.array([[city_encoded, body_type_encoded, oem_encoded, model_name_encoded, year, 
                                 fuel_type_encoded, ownership_encoded, transmission_encoded, engine_type_encoded, 
-                                seating_capacity, Mileage, max_power, engine_displacement, kms_driven]])
+                                seating_capacity, Mileage, max_power, engine_displacement, kms_driven, Acceleration]])
 
         # Predict price
         predicted_price = model.predict(input_data)[0]
